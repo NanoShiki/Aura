@@ -5,5 +5,5 @@
 
 void UAuraUserWidget::SetWidgetController(UObject* InWidgetController) {
 	WidgetController = InWidgetController;
-	WidgetControllerSet();
+	WidgetControllerSet();	//每次设置了controller之后, 就触发对应event.
 }
