@@ -7,17 +7,13 @@
 #include "AbilitySystem/AuraAttributeSet.h"
 
 // Sets default values
-AAuraEffectActor::AAuraEffectActor()
-{
+AAuraEffectActor::AAuraEffectActor(){
 	PrimaryActorTick.bCanEverTick = false;
-
 	SetRootComponent(CreateDefaultSubobject<USceneComponent>("SceneRoot"));
 }
 
-void AAuraEffectActor::BeginPlay()
-{
+void AAuraEffectActor::BeginPlay(){
 	Super::BeginPlay();
-
 }
 
 void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass) {
