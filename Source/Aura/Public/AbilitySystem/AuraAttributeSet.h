@@ -49,6 +49,10 @@ struct FEffectProperties {
 
 struct FGameplayEffectModCallbackData;
 class FLifetimeProperty;
+struct FGameplayTag;
+
+template<class T>
+using TStaticFuncPtr = typename TBaseStaticDelegateInstance<T, FDefaultDelegateUserPolicy>::FFuncPtr;
 
 /**
  * 
@@ -63,6 +67,9 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const override;
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+
+	TMap<FGameplayTag, TStaticFuncPtr<FGameplayAttribute()>> TagsToAttributes;
+	//FGameplayAttribute()不是调用构造函数, 而是返回类型+传入参数的形式. 如: float(float), 代表返回类型为float, 参数为一个float.
 
 	/*
 	 * Primary Attributes
