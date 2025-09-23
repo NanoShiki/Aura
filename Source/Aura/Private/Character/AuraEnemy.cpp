@@ -11,6 +11,8 @@ AAuraEnemy::AAuraEnemy() {
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAuraAbilitySystemComponent>("AbilitySystemComponent");
 	AbilitySystemComponent->SetIsReplicated(true);
+
+	//同步模式选择minimal. 特点是GameplayEffect不会被同步到任何客户端, GameplayTags和GameplayCue则会被同步到所有客户端
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 	
 	AttributeSet = CreateDefaultSubobject<UAuraAttributeSet>("AttributeSet");

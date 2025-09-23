@@ -60,10 +60,11 @@ void AAuraPlayerController::AbilityInputTagPressed(FGameplayTag InputTag) {
 		bAutoRunning = true;
 	}
 }
+
 void AAuraPlayerController::AbilityInputTagReleased(FGameplayTag InputTag) {
 	if (!InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB)) {
 		if (GetASC()) {
-			GetASC()->AbilityInputTagHeld(InputTag);
+			GetASC()->AbilityInputTagReleased(InputTag);
 		}
 		return;
 	}
@@ -90,6 +91,7 @@ void AAuraPlayerController::AbilityInputTagReleased(FGameplayTag InputTag) {
 		bTargeting = false;
 	}
 }
+
 void AAuraPlayerController::AbilityInputTagHeld(FGameplayTag InputTag) {
 	if (!InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB)) {
 		if (GetASC()) {

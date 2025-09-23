@@ -15,9 +15,8 @@ void UAuraProjectileSpell::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	if (!bIsServer) {
 		return;
 	}
-
-	ICombatInterface* CombatInterface = Cast<ICombatInterface>(GetAvatarActorFromActorInfo());
-	if (CombatInterface) {
+	
+	if (ICombatInterface* CombatInterface = Cast<ICombatInterface>(GetAvatarActorFromActorInfo())) {
 		const FVector SocketLocation = CombatInterface->GetCombatSocketLocation();
 		
 		FTransform SpawnTransform;

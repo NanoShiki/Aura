@@ -28,15 +28,16 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	TObjectPtr<USkeletalMeshComponent> Weapon;
-
+	
 	UPROPERTY(EditAnywhere, Category="Combat")
 	FName WeaponTipSocketName;
 
+	/** ICombatInterface */
 	virtual FVector GetCombatSocketLocation() override;
+	/** End ICombatInterface */
 
 	UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
-
 	UPROPERTY()
 	TObjectPtr<UAttributeSet> AttributeSet;
 
@@ -46,10 +47,10 @@ protected:
 	
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Attributes")
 	TSubclassOf<UGameplayEffect> DefaultPrimaryAttributes;
-
+	
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Attributes")
 	TSubclassOf<UGameplayEffect> DefaultSecondaryAttributes;
-
+	
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Attributes")
 	TSubclassOf<UGameplayEffect> DefaultVitalAttributes;
 	

@@ -11,6 +11,7 @@
 
 
 UAuraAttributeSet::UAuraAttributeSet() {
+	//对于非AActor子类的类, 似乎不需要加bReplicated = ture
 	const FAuraGameplayTags& GameplayTags = FAuraGameplayTags::Get();
 
 	TagsToAttributes.Add(GameplayTags.Attributes_Primary_Strength, GetStrengthAttribute);
