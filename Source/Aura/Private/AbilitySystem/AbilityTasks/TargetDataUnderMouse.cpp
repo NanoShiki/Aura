@@ -16,10 +16,21 @@ void UTargetDataUnderMouse::Activate() {
 	//Super::Activate(); //父类只是做了log
 
 	if (Ability->GetCurrentActorInfo()->IsLocallyControlled()) {
+		//客户端: 发送数据, 广播ValidData
 		SendMouseCursorData();
 	}
 	else {
-		//TODO: On the server, listen for target data
+		//服务器: 接受数据, 广播SetDelegate, 以触发回调函数, 进而广播ValidData
+		const FGameplayAbilitySpecHandle SpecHandle = GetAbilitySpecHandle();
+		const FPredictionKey ActivationPredictionKey = GetActivationPredictionKey();
+		AbilitySystemComponent.Get()->AbilityTargetDataSetDelegate(SpecHandle, ActivationPredictionKey).AddUObject(this, &UTargetDataUnderMouse::OnTargetDataReplicatedCallback);
+		//重复broadcast一次. 会通过GASpecHandle来找到TargetData, 然后Broadcast
+		const bool bCalledDelegate = AbilitySystemComponent.Get()->CallReplicatedTargetDataDelegatesIfSet(SpecHandle, ActivationPredictionKey);
+		if (!bCalledDelegate) {
+			//如果在Map中找不到TargetData, 就会返回false. 于是等待玩家数据
+			SetWaitingOnRemotePlayerData();
+			//在等待之后, 视频里没有再做其他事情了, 不太懂. 按理来说应该重新调用一次CallReplicatedTargetDataDelegatesIfSet.
+		}
 	}
 }
 
@@ -37,6 +48,7 @@ void UTargetDataUnderMouse::SendMouseCursorData() {
 	FGameplayAbilityTargetData_SingleTargetHit* Data = new FGameplayAbilityTargetData_SingleTargetHit(HitResult);
 	DataHandle.Add(Data);
 
+	//这个函数将会broadcast一次SetDelegate, 我们会将需要触发的事件添加到这个委托
 	AbilitySystemComponent->ServerSetReplicatedTargetData(
 		GetAbilitySpecHandle(),
 		GetActivationPredictionKey(),	//original prediction key, 最初能力激活时的prediction key
@@ -45,6 +57,13 @@ void UTargetDataUnderMouse::SendMouseCursorData() {
 		AbilitySystemComponent->ScopedPredictionKey
 	);
 
+	if (ShouldBroadcastAbilityTaskDelegates()) {
+		ValidData.Broadcast(DataHandle);
+	}
+}
+
+void UTargetDataUnderMouse::OnTargetDataReplicatedCallback(const FGameplayAbilityTargetDataHandle& DataHandle, FGameplayTag ActivationTag) {
+	AbilitySystemComponent->ConsumeClientReplicatedTargetData(GetAbilitySpecHandle(), GetActivationPredictionKey());
 	if (ShouldBroadcastAbilityTaskDelegates()) {
 		ValidData.Broadcast(DataHandle);
 	}
