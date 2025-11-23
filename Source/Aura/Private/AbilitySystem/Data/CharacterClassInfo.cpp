@@ -1,0 +1,8 @@
+// Copyright Nanoshiki
+
+
+#include "AbilitySystem/Data/CharacterClassInfo.h"
+
+FCharacterClassDefaultInfo UCharacterClassInfo::GetClassDefaultInfo(ECharacterClass CharacterClass) const {
+	return CharacterClassDefaultInfoMap.FindChecked(CharacterClass);
+}

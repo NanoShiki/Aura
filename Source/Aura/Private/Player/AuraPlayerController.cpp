@@ -6,12 +6,15 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AuraGameplayTags.h"
 #include "EnhancedInputSubsystems.h"
+#include "MovieSceneTracksComponentTypes.h"
 #include "NavigationPath.h"
 #include "NavigationSystem.h"
 #include "AbilitySystem/AuraAbilitySystemComponent.h"
 #include "Components/SplineComponent.h"
 #include "Input/AuraInputComponent.h"
 #include "Interaction/EnemyInterface.h"
+#include "GameFramework/Character.h"
+#include "UI/Widget/DamageWidgetComponent.h"
 
 AAuraPlayerController::AAuraPlayerController() {
 	bReplicates = true;
@@ -24,6 +27,27 @@ void AAuraPlayerController::PlayerTick(float DeltaTime) {
 
 	CursorTrace();
 	AutoRun();
+}
+
+void AAuraPlayerController::ClientShowDamageNumber_Implementation(float DamageAmount, ACharacter* Target, bool bBlockedHit, bool bCriticalHit) {
+	if (!IsValid(Target)) {
+		UE_LOG(LogTemp, Error, TEXT("ClientShowDamageNumber: Target is not valid"));
+		return;
+	}
+	if (!DamageTextComponentClass) {
+		UE_LOG(LogTemp, Error, TEXT("ClientShowDamageNumber: DamageTextComponentClass is not set"));
+		return;
+	}
+	if (!IsLocalController())
+	{
+		UE_LOG(LogTemp, Error, TEXT("ClientShowDamageNumber: Not local controller"));
+		return;
+	}
+	UDamageWidgetComponent* DamageText = NewObject<UDamageWidgetComponent>(Target, DamageTextComponentClass);
+	DamageText->RegisterComponent();	//动态创建Component的时候需要手动调用这个.
+	DamageText->AttachToComponent(Target->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+	DamageText->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	DamageText->SetDamageText(DamageAmount, bBlockedHit, bCriticalHit);
 }
 
 void AAuraPlayerController::CursorTrace() {
