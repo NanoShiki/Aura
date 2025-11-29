@@ -9,6 +9,8 @@
 #include "UI/WidgetController/OverlayWidgetController.h"
 #include "AuraEnemy.generated.h"
 
+class AAuraAIController;
+class UBehaviorTree;
 class UWidgetComponent;
 /**
  * 
@@ -20,16 +22,21 @@ class AURA_API AAuraEnemy : public AAuraCharacterBase, public IEnemyInterface
 
 public:
 	AAuraEnemy();
+	/** 
+	 * Called when this Pawn is possessed. Only called on the server (or in standalone).
+	 * @param NewController The controller possessing this pawn
+	 */
+	virtual void PossessedBy(AController* NewController) override;
 
-	/** Enemy Interface */
+	//~ Begin IEnemyInterface Interface
 	virtual void HighLightActor() override;
 	virtual void UnHighLightActor() override;
-	/** end Enemy Interface */
+	//~ End IEnemyInterface Interface
 
-	/** Combat Interface */
+	//~ Begin ICombatInterface Interface
 	virtual int32 GetPlayerLevel() override;
 	virtual void Die() override;
-	/** end Combat Interface */
+	//~ End ICombatInterface Interface
 
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedSignature OnHealthChanged;
@@ -51,7 +58,6 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
 	virtual void InitAbilityActorInfo() override;
 	virtual void InitDefaultAttributes() const override;
 
@@ -63,4 +69,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UWidgetComponent> HealthBarWidgetComp;
+
+	UPROPERTY(EditAnywhere, Category="AI")
+	TObjectPtr<UBehaviorTree> BehaviorTree;
+
+	UPROPERTY()
+	TObjectPtr<AAuraAIController> AuraAIController;
 };

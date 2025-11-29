@@ -43,7 +43,10 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void OnEndOverlap(AActor* TargetActor);
- 
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Effect")
+	bool bApplyEffectsToEnemies = false;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Effect")
 	TSubclassOf<UGameplayEffect> InstantGameplayEffectClass;
 

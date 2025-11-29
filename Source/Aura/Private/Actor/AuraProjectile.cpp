@@ -39,7 +39,7 @@ void AAuraProjectile::BeginPlay()
 
 	LoopingSoundComp = UGameplayStatics::SpawnSoundAttached(LoopingSound, GetRootComponent());
 }
-
+ 
 void AAuraProjectile::Destroyed() {
 	//经过Log测试, 只有当OnSphereOverlap被调用后没有马上Destroy时, 客户端才会执行OnSphereOverlap(比如我偶然触发的bug: 火球碰到自己产生爆炸, 但是没有销毁, 继续飞行碰到敌人时才销毁)
 	//如果马上Destroy, 那么客户端只会执行Destroyed而不会执行OnSphereOverlap. 不知道这样能不能说明如果调用了Destroyed就不会调用OnSphereOverlap了?
