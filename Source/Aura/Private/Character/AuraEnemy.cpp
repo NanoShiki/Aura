@@ -52,7 +52,7 @@ void AAuraEnemy::BeginPlay() {
 	InitAbilityActorInfo();
 	if (HasAuthority())
 	{
-		UAuraAbilitySystemLibrary::GiveStartupAbilities(this, AbilitySystemComponent);
+		UAuraAbilitySystemLibrary::GiveStartupAbilities(this, AbilitySystemComponent, CharacterClass);
 	}
 	
 
@@ -84,7 +84,10 @@ void AAuraEnemy::BeginPlay() {
 void AAuraEnemy::HitReactTagChanged(const FGameplayTag CallbackTag, int32 NewCount) {
 	bHitReacting = NewCount > 0;
 	GetCharacterMovement()->MaxWalkSpeed = bHitReacting ? 0.f : BaseWalkSpeed;
-	AuraAIController->GetBlackboardComponent()->SetValueAsFloat(FName("HitReacting"), bHitReacting);
+	if (AuraAIController)
+	{
+		AuraAIController->GetBlackboardComponent()->SetValueAsFloat(FName("HitReacting"), bHitReacting);	//客户端上没有AuraAIController, 所以调用这个会崩溃
+	}
 }
 
 void AAuraEnemy::InitAbilityActorInfo() {
@@ -120,4 +123,14 @@ int32 AAuraEnemy::GetPlayerLevel() {
 void AAuraEnemy::Die() {
 	SetLifeSpan(LifeSpan);
 	Super::Die();
+}
+
+void AAuraEnemy::SetCombatTarget_Implementation(AActor* InCombatTarget)
+{
+	CombatTarget = InCombatTarget;
+}
+
+AActor* AAuraEnemy::GetCombatTarget_Implementation() const
+{
+	return CombatTarget;
 }

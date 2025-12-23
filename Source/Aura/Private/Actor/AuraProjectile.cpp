@@ -9,6 +9,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
+#include "AbilitySystem/AuraAbilitySystemLibrary.h"
 #include "Aura/Aura.h"
 #include "Components/AudioComponent.h"
 
@@ -60,6 +61,10 @@ void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlapComp, AActor* 
 	}
 	const auto& EffectCauser = DamageEffectSpecHandle.Data.Get()->GetContext().GetEffectCauser();
 	if (EffectCauser == OtherActor)
+	{
+		return;
+	}
+	if (!UAuraAbilitySystemLibrary::IsNotFriend(EffectCauser, OtherActor))
 	{
 		return;
 	}
