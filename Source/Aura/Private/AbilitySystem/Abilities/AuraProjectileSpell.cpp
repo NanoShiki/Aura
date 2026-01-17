@@ -15,11 +15,11 @@ void UAuraProjectileSpell::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 }
 
-void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocation) {
+void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocation, const FGameplayTag& SocketTag) {
 	const bool bIsServer = GetAvatarActorFromActorInfo()->HasAuthority();
 	if (!bIsServer) return;
 
-	const FVector SocketLocation = ICombatInterface::Execute_GetCombatSocketLocation(GetAvatarActorFromActorInfo(), FAuraGameplayTags::Get().Montage_Attack_Weapon);
+	const FVector SocketLocation = ICombatInterface::Execute_GetCombatSocketLocation(GetAvatarActorFromActorInfo(), SocketTag);
 	FRotator Rotation = (ProjectileTargetLocation - SocketLocation).Rotation();
 	
 	FTransform SpawnTransform;
@@ -50,7 +50,13 @@ void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocati
 
 	for (auto& Pair : DamageTypes)
 	{
-		const float ScaledDamage = Pair.Value.GetValueAtLevel(GetAbilityLevel());
+		// 检查当前角色是否是玩家
+		const AActor* AvatarActor = GetAvatarActorFromActorInfo();
+		const bool bIsPlayer = AvatarActor && AvatarActor->GetInstigatorController() && AvatarActor->GetInstigatorController()->IsPlayerController();
+		
+		// 如果是玩家则使用等级10，否则使用能力实际等级
+		const float DamageLevel = bIsPlayer ? 10 : GetAbilityLevel();
+		const float ScaledDamage = Pair.Value.GetValueAtLevel(DamageLevel);
 		UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Pair.Key, ScaledDamage);
 	}
 	Projectile->DamageEffectSpecHandle = SpecHandle;

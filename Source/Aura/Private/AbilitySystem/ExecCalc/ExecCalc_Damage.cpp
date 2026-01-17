@@ -124,8 +124,7 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 	{
 		const FGameplayTag DamageTypeTag = Pair.Key;
 		const FGameplayTag ResistanceTag = Pair.Value;
-
-		const auto& DStatics = DamageStatics();
+		
 		if (!DamageStatics().TagsToCaptureDefs.Contains(ResistanceTag))
 		{
 			UE_LOG(LogTemp, Error, TEXT("UExecCalc_Damage::Execute_Implementation: ResistanceTag %s not found in TagsToCaptureDefs"), *ResistanceTag.ToString());
@@ -133,7 +132,7 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 		}
 		const FGameplayEffectAttributeCaptureDefinition CaptureDef = DamageStatics().TagsToCaptureDefs[ResistanceTag];
 		
-		float DamageTypeValue = Spec.GetSetByCallerMagnitude(DamageTypeTag);
+		float DamageTypeValue = Spec.GetSetByCallerMagnitude(DamageTypeTag, false);
 		float Resistance = 0.f;
 		ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(CaptureDef, EvaluateParams, Resistance);
 		Resistance = FMath::Clamp(Resistance, 0.f, 100.f);
