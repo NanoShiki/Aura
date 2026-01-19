@@ -15,6 +15,7 @@
 
 AAuraProjectile::AAuraProjectile()
 {
+	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
 	Sphere = CreateDefaultSubobject<USphereComponent>("Sphere");
@@ -35,9 +36,10 @@ AAuraProjectile::AAuraProjectile()
 void AAuraProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	Sphere->OnComponentBeginOverlap.AddDynamic(this, &AAuraProjectile::OnSphereOverlap);
 	SetLifeSpan(LifeSpan);
-
+	SetReplicateMovement(true);
+	Sphere->OnComponentBeginOverlap.AddDynamic(this, &AAuraProjectile::OnSphereOverlap);
+	
 	LoopingSoundComp = UGameplayStatics::SpawnSoundAttached(LoopingSound, GetRootComponent());
 }
  
