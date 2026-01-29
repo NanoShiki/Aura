@@ -50,12 +50,8 @@ void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocati
 
 	for (auto& Pair : DamageTypes)
 	{
-		// 检查当前角色是否是玩家
-		const AActor* AvatarActor = GetAvatarActorFromActorInfo();
-		const bool bIsPlayer = AvatarActor && AvatarActor->GetInstigatorController() && AvatarActor->GetInstigatorController()->IsPlayerController();
-		
 		// 如果是玩家则使用等级10，否则使用能力实际等级
-		const float DamageLevel = bIsPlayer ? 10 : GetAbilityLevel();
+		const float DamageLevel = GetAbilityLevel();
 		const float ScaledDamage = Pair.Value.GetValueAtLevel(DamageLevel);
 		UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Pair.Key, ScaledDamage);
 	}

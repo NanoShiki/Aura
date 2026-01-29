@@ -108,6 +108,24 @@ FGameplayTag UAuraAbilitySystemComponent::GetStatusFromSpec(const FGameplayAbili
 	return FGameplayTag();
 }
 
+FGameplayTag UAuraAbilitySystemComponent::GetStatusFromTag(const FGameplayTag& AbilityTag)
+{
+	if (const FGameplayAbilitySpec* AbilitySpec = GetSpecFromAbilityTag(AbilityTag))
+	{
+		return GetStatusFromSpec(*AbilitySpec);
+	}
+	return FGameplayTag();
+}
+
+FGameplayTag UAuraAbilitySystemComponent::GetInputTagFromTag(const FGameplayTag& AbilityTag)
+{
+	if (const FGameplayAbilitySpec* AbilitySpec = GetSpecFromAbilityTag(AbilityTag))
+	{
+		return GetInputTagFromSpec(*AbilitySpec);
+	}
+	return FGameplayTag();
+}
+
 FGameplayAbilitySpec* UAuraAbilitySystemComponent::GetSpecFromAbilityTag(const FGameplayTag& AbilityTag)
 {
 	FScopedAbilityListLock ActiveScopeLock(*this);
@@ -161,10 +179,122 @@ void UAuraAbilitySystemComponent::UpdateAbilityStatuses(int32 Level)
 			AbilitySpec.GetDynamicSpecSourceTags().AddTag(FAuraGameplayTags::Get().Abilities_Status_Eligible);
 			GiveAbility(AbilitySpec);
 			MarkAbilitySpecDirty(AbilitySpec);	//立刻同步变量, 而不是等下一次统一同步
-			ClientUpdateAbilityStatus(Info.AbilityTag, FAuraGameplayTags::Get().Abilities_Status_Eligible);
+			ClientUpdateAbilityStatus(Info.AbilityTag, FAuraGameplayTags::Get().Abilities_Status_Eligible, 1);
 		}
 	}
 	
+}
+
+void UAuraAbilitySystemComponent::ServerSpendSpellPoint_Implementation(const FGameplayTag& AbilityTag)
+{
+	if (FGameplayAbilitySpec* AbilitySpec = GetSpecFromAbilityTag(AbilityTag))
+	{
+		if (GetAvatarActor()->Implements<UPlayerInterface>())
+		{
+			IPlayerInterface::Execute_AddToSpellPoints(GetAvatarActor(), -1);
+		}
+		const FAuraGameplayTags GameplayTags = FAuraGameplayTags::Get();
+		FGameplayTag Status = GetStatusFromSpec(*AbilitySpec);
+		if (Status.MatchesTagExact(GameplayTags.Abilities_Status_Eligible))
+		{
+			AbilitySpec->GetDynamicSpecSourceTags().RemoveTag(GameplayTags.Abilities_Status_Eligible);
+			AbilitySpec->GetDynamicSpecSourceTags().AddTag(GameplayTags.Abilities_Status_Unlocked);
+			Status = GetStatusFromSpec(*AbilitySpec);
+		}
+		else if (Status.MatchesTagExact(GameplayTags.Abilities_Status_Unlocked) || Status.MatchesTagExact(GameplayTags.Abilities_Status_Equipped))
+		{
+			AbilitySpec->Level += 1;
+		}
+		ClientUpdateAbilityStatus(AbilityTag, Status, AbilitySpec->Level);
+		MarkAbilitySpecDirty(*AbilitySpec);
+	}
+}
+
+void UAuraAbilitySystemComponent::ServerEquipAbility_Implementation(const FGameplayTag& AbilityTag,
+	const FGameplayTag& Slot)
+{
+	if (FGameplayAbilitySpec* AbilitySpec = GetSpecFromAbilityTag(AbilityTag))
+	{
+		const FGameplayTag& PrevSlot = GetInputTagFromSpec(*AbilitySpec);
+		const FGameplayTag Status = GetStatusFromSpec(*AbilitySpec);
+
+		if (Status.MatchesTagExact(FAuraGameplayTags::Get().Abilities_Status_Equipped) || Status.MatchesTagExact(FAuraGameplayTags::Get().Abilities_Status_Unlocked))
+		{
+			ClearAbilitiesOfSlot(Slot);
+			ClearSlot(AbilitySpec);
+			AbilitySpec->GetDynamicSpecSourceTags().AddTag(Slot);
+			if (Status.MatchesTagExact(FAuraGameplayTags::Get().Abilities_Status_Unlocked))
+			{
+				AbilitySpec->GetDynamicSpecSourceTags().AddTag(FAuraGameplayTags::Get().Abilities_Status_Equipped);
+				AbilitySpec->GetDynamicSpecSourceTags().RemoveTag(FAuraGameplayTags::Get().Abilities_Status_Unlocked);
+			}
+			MarkAbilitySpecDirty(*AbilitySpec);
+			ClientEquipAbility(AbilityTag, FAuraGameplayTags::Get().Abilities_Status_Equipped, Slot, PrevSlot);
+		}
+	}
+}
+
+void UAuraAbilitySystemComponent::ClientEquipAbility(const FGameplayTag& AbilityTag,
+	const FGameplayTag& Status, const FGameplayTag& Slot, const FGameplayTag& PrevSlot)
+{
+	AbilityEquippedDelegate.Broadcast(AbilityTag, Status, Slot, PrevSlot);
+}
+
+bool UAuraAbilitySystemComponent::GetDescriptionByAbilityTag(const FGameplayTag& AbilityTag, FString& OutDescription,
+                                                             FString& OutNextLevelDescription)
+{
+	if (const FGameplayAbilitySpec* AbilitySpec = GetSpecFromAbilityTag(AbilityTag))
+	{
+		if (UAuraGameplayAbility* AuraAbility = Cast<UAuraGameplayAbility>(AbilitySpec->Ability))
+		{
+			OutDescription = AuraAbility->GetDescription(AbilitySpec->Level);
+			OutNextLevelDescription = AuraAbility->GetNextLevelDescription(AbilitySpec->Level + 1);
+			return true;
+		}
+	}
+	const UAbilityInfo* AbilityInfo = UAuraAbilitySystemLibrary::GetAbilityInfo(GetAvatarActor());
+	if (!AbilityTag.IsValid() || AbilityTag.MatchesTagExact(FAuraGameplayTags::Get().Abilities_None) || !AbilityInfo)
+	{
+		//客户端获取不到AbilityInfo, 这里做个保护
+		OutDescription = FString();
+	}
+	else
+	{
+		OutDescription = UAuraGameplayAbility::GetLockedDescription(AbilityInfo->FindAbilityInfoForTag(AbilityTag).LevelRequirement);
+	}
+	OutNextLevelDescription = FString();
+	return false;
+}
+
+void UAuraAbilitySystemComponent::ClearSlot(FGameplayAbilitySpec* AbilitySpec)
+{
+	const FGameplayTag Slot = GetInputTagFromSpec(*AbilitySpec);
+	AbilitySpec->GetDynamicSpecSourceTags().RemoveTag(Slot);
+	MarkAbilitySpecDirty(*AbilitySpec);
+}
+
+void UAuraAbilitySystemComponent::ClearAbilitiesOfSlot(const FGameplayTag& Slot)
+{
+	FScopedAbilityListLock ActiveScopeLock(*this);
+	for (FGameplayAbilitySpec& Spec : GetActivatableAbilities())
+	{
+		if (AbilityHasSlot(&Spec, Slot))
+		{
+			ClearSlot(&Spec);
+		}
+	}
+}
+
+bool UAuraAbilitySystemComponent::AbilityHasSlot(FGameplayAbilitySpec* Spec, const FGameplayTag& Slot)
+{
+	for (const auto& Tag : Spec->GetDynamicSpecSourceTags())
+	{
+		if (Tag.MatchesTagExact(Slot))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 void UAuraAbilitySystemComponent::OnRep_ActivateAbilities()
@@ -179,9 +309,9 @@ void UAuraAbilitySystemComponent::OnRep_ActivateAbilities()
 }
 
 void UAuraAbilitySystemComponent::ClientUpdateAbilityStatus_Implementation(const FGameplayTag& AbilityTag,
-	const FGameplayTag& StatusTag)
+	const FGameplayTag& StatusTag, int32 AbilityLevel)
 {
-	AbilityStatusChangedDelegate.Broadcast(AbilityTag, StatusTag);
+	AbilityStatusChangedDelegate.Broadcast(AbilityTag, StatusTag, AbilityLevel);
 }
 
 void UAuraAbilitySystemComponent::ClientEffectApplied_Implementation(UAbilitySystemComponent* AbilitySystemComponent,

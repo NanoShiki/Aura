@@ -3,6 +3,7 @@
 
 #include "UI/WidgetController/OverlayWidgetController.h"
 
+#include "AuraGameplayTags.h"
 #include "AbilitySystem/AuraAbilitySystemComponent.h"
 #include "AbilitySystem/AuraAttributeSet.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
@@ -74,6 +75,8 @@ void UOverlayWidgetController::BindCallbacksToDependencies() {
 			}		
 		}
 	);
+
+	GetAuraAbilitySystemComponent()->AbilityEquippedDelegate.AddUObject(this, &UOverlayWidgetController::OnAbilityEquipped);
 }
 
 void UOverlayWidgetController::OnXPChanged(int32 NewXP)
@@ -97,4 +100,20 @@ void UOverlayWidgetController::OnXPChanged(int32 NewXP)
 
 		OnXPPercentChanged.Broadcast(XPProgress);
 	}
+}
+
+void UOverlayWidgetController::OnAbilityEquipped(const FGameplayTag& AbilityTag, const FGameplayTag& Status,
+	const FGameplayTag& Slot, const FGameplayTag& PrevSlot)
+{
+	FAuraAbilityInfo LastSlotInfo;
+	LastSlotInfo.StatusTag = FAuraGameplayTags::Get().Abilities_Status_Unlocked;
+	LastSlotInfo.InputTag = PrevSlot;
+	LastSlotInfo.AbilityTag = FAuraGameplayTags::Get().Abilities_None;
+
+	AbilityInfoDelegate.Broadcast(LastSlotInfo);
+
+	FAuraAbilityInfo Info = AbilityInfo->FindAbilityInfoForTag(AbilityTag);
+	Info.StatusTag = Status;
+	Info.InputTag = Slot;
+	AbilityInfoDelegate.Broadcast(Info);
 }

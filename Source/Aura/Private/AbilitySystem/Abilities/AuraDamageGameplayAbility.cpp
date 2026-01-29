@@ -16,3 +16,9 @@ void UAuraDamageGameplayAbility::CauseDamage(AActor* TargetActor)
 	}
 	GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(*DamageSpecHandle.Data.Get(), UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor));
 }
+
+float UAuraDamageGameplayAbility::GetDamageByDamageType(float InLevel, const FGameplayTag& DamageTypeTag) const
+{
+	checkf(DamageTypes.Contains(DamageTypeTag), TEXT("DamageTypeTag does not exist"));
+	return DamageTypes[DamageTypeTag].GetValueAtLevel(InLevel);
+}
